@@ -21,7 +21,7 @@ import { OtfManagement } from './components/OtfManagement';
 import { SupplierManagement } from './components/SupplierManagement';
 import { Login } from './components/Login';
 
-const API_BASE_URL = 'http://localhost:3001/api/v1';
+const API_BASE_URL = 'https://two0250919-bstr-backend.onrender.com/api/v1';
 
 const App: React.FC = () => {
   // Global App State - starts null, loaded from API
@@ -948,7 +948,39 @@ const App: React.FC = () => {
         
         const handleReviseStf = async () => {};
         const handleCreateOtf = async () => {};
-        const handleCreateTenantAndAdmin = async () => {};
+        const handleCreateTenantAndAdmin = async (data: any) => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const response = await fetch(`${API_BASE_URL}/tenant`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to create tenant');
+                }
+                // Refresh all data after creation
+                const allDataResponse = await fetch(`${API_BASE_URL}/all-data`);
+                if (!allDataResponse.ok) {
+                    throw new Error('Failed to fetch updated data');
+                }
+                const updatedData: AppData = await allDataResponse.json();
+                // Fix user project_ids and discipline_ids for compatibility
+                updatedData.users.forEach(u => {
+                    u.project_ids = u.project_ids || u.projects.map(p => p.id);
+                    u.discipline_ids = u.discipline_ids || u.disciplines.map(d => d.id);
+                    u.projects = u.project_ids.map(id => updatedData.projects.find(p => p.id === id)!).filter(Boolean);
+                    u.disciplines = u.discipline_ids.map(id => updatedData.disciplines.find(d => d.id === id)!).filter(Boolean);
+                });
+                setAppData(updatedData);
+            } catch (error) {
+                setError('Error creating tenant: ' + (error as Error).message);
+                console.error('Error creating tenant:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
         const handleUpdateTenant = async () => {};
         const handleResetPassword = async () => {};
         const handleReassignAdmin = async () => {};
