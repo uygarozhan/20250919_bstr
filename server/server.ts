@@ -1,3 +1,74 @@
+// ...existing code...
+
+// --- API Endpoints ---
+// ...existing code...
+// Create Tenant and Initial Admin
+app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
+    try {
+        const { tenantName, adminUser, adminPositionName } = req.body;
+        if (!tenantName || !adminUser || !adminUser.firstName || !adminUser.lastName || !adminUser.email || !adminUser.password) {
+            return res.status(400).json({ message: 'Missing required tenant or admin user fields (including password).' });
+        }
+
+        // Create Tenant
+        const tenant = await prisma.tenant.create({
+            data: {
+                name: tenantName,
+                active: true
+            }
+        });
+
+        // Create Position for Admin
+        const position = await prisma.position.create({
+            data: {
+                tenant_id: tenant.id,
+                name: adminPositionName || 'Administrator'
+            }
+        });
+
+        // Create Admin User (without roles)
+        const user = await prisma.user.create({
+            data: {
+                tenant_id: tenant.id,
+                firstName: adminUser.firstName,
+                lastName: adminUser.lastName,
+                email: adminUser.email,
+                password: adminUser.password,
+                phone: adminUser.phone || '',
+                position_id: position.id,
+                active: true
+            }
+        });
+
+        // Find or create Administrator role
+        let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
+        if (!adminRole) {
+            adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
+        }
+
+        // Assign Administrator role to user
+        await prisma.userRole.create({
+            data: {
+                user_id: user.id,
+                role_id: adminRole.id
+            }
+        });
+
+        // Return created tenant and admin user (with position and roles info)
+        const userWithDetails = await prisma.user.findUnique({
+            where: { id: user.id },
+            include: {
+                position: true,
+                user_roles: { include: { role: true } }
+            }
+        });
+
+        res.status(201).json({ tenant, adminUser: userWithDetails });
+    } catch (error) {
+        console.error('Error creating tenant and admin:', error);
+        res.status(500).json({ message: 'Failed to create tenant and admin.', error: (error as Error).message });
+    }
+});
 import express from 'express';
 import cors from 'cors';
 // Fix Prisma client import
