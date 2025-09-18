@@ -1,0 +1,344 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Models
+model Tenant {
+  id       Int      @id @default(autoincrement())
+  name     String
+  active   Boolean
+  users    User[]
+  projects Project[]
+  disciplines Discipline[]
+  items    ItemLibrary[]
+  suppliers Supplier[]
+  positions Position[]
+}
+
+model Role {
+  id    Int      @id @default(autoincrement())
+  name  String
+  level Int?
+  user_roles UserRole[]
+}
+
+model Project {
+  id                        Int      @id @default(autoincrement())
+  tenant_id                Int
+  name                     String
+  code                     String
+  country                  String
+  base_currency            String
+  max_mtf_approval_level   Int
+  max_stf_approval_level   Int
+  max_otf_approval_level   Int
+  max_mrf_approval_level   Int
+  max_mdf_approval_level   Int
+  tenant                   Tenant   @relation(fields: [tenant_id], references: [id])
+  user_projects            UserProject[]
+  mtf_headers              MTF_Header[]
+  stf_orders               STF_Order[]
+  otf_orders               OTF_Order[]
+  mrf_headers              MRF_Header[]
+  mdf_issues               MDF_Issue[]
+}
+
+model Discipline {
+  id             Int    @id @default(autoincrement())
+  tenant_id     Int
+  discipline_code String
+  discipline_name String
+  budget_code    String
+  budget_name    String
+  tenant         Tenant @relation(fields: [tenant_id], references: [id])
+  user_disciplines UserDiscipline[]
+  mtf_headers    MTF_Header[]
+  stf_orders     STF_Order[]
+  otf_orders     OTF_Order[]
+  mrf_headers    MRF_Header[]
+}
+
+model Position {
+  id        Int    @id @default(autoincrement())
+  tenant_id Int
+  name      String
+  tenant    Tenant @relation(fields: [tenant_id], references: [id])
+  users     User[]
+}
+
+model User {
+  id              Int          @id @default(autoincrement())
+  tenant_id       Int?
+  is_super_admin  Boolean?
+  firstName       String
+  lastName        String
+  email           String       @unique
+  password        String?
+  phone           String
+  position_id     Int
+  active          Boolean
+  tenant          Tenant?      @relation(fields: [tenant_id], references: [id])
+  position        Position     @relation(fields: [position_id], references: [id])
+  user_roles      UserRole[]
+  user_projects   UserProject[]
+  user_disciplines UserDiscipline[]
+  mtf_headers_created MTF_Header[] @relation("MTFHeaderCreatedBy")
+  stf_orders_created STF_Order[]  @relation("STFOrderCreatedBy")
+  otf_orders_created OTF_Order[]  @relation("OTFOrderCreatedBy")
+  mrf_headers_created MRF_Header[] @relation("MRFHeaderCreatedBy")
+  mdf_issues_created MDF_Issue[]  @relation("MDFIssueCreatedBy")
+}
+
+// Many-to-many relations
+model UserRole {
+  user_id Int
+  role_id Int
+
+  user    User @relation(fields: [user_id], references: [id])
+  role    Role @relation(fields: [role_id], references: [id])
+
+  @@id([user_id, role_id])
+}
+
+model UserProject {
+  user_id    Int
+  project_id Int
+
+  user    User    @relation(fields: [user_id], references: [id])
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@id([user_id, project_id])
+}
+
+model UserDiscipline {
+  user_id       Int
+  discipline_id Int
+
+  user       User       @relation(fields: [user_id], references: [id])
+  discipline Discipline @relation(fields: [discipline_id], references: [id])
+
+  @@id([user_id, discipline_id])
+}
+
+model ItemLibrary {
+  id                   Int     @id @default(autoincrement())
+  tenant_id           Int
+  material_code       String
+  material_name       String
+  material_description String?
+  unit                String
+  budget_unit_price   Float?
+  tenant              Tenant  @relation(fields: [tenant_id], references: [id])
+  mtf_lines           MTF_Line[]
+}
+
+model Supplier {
+  id              Int    @id @default(autoincrement())
+  tenant_id      Int
+  name           String
+  contact_person String
+  email          String
+  phone          String
+  address        String
+  active         Boolean
+  tenant         Tenant @relation(fields: [tenant_id], references: [id])
+  stf_orders     STF_Order[]
+}
+
+model MTF_Header {
+  id                     Int           @id @default(autoincrement())
+  MTF_ID                String        @unique
+  project_id            Int
+  discipline_id         Int
+  date_created          DateTime
+  created_by            Int
+  status                String
+  current_approval_level Int
+  project               Project       @relation(fields: [project_id], references: [id])
+  discipline            Discipline    @relation(fields: [discipline_id], references: [id])
+  creator               User          @relation("MTFHeaderCreatedBy", fields: [created_by], references: [id])
+  mtf_lines             MTF_Line[]
+  mtf_history_logs      MTF_History_Log[]
+}
+
+model MTF_Line {
+  id                     Int            @id @default(autoincrement())
+  mtf_header_id         Int
+  item_id               Int
+  material_description  String
+  request_qty           Float
+  status                String
+  current_approval_level Int
+  est_unit_price        Float
+  est_total_price       Float
+  mtf_header            MTF_Header     @relation(fields: [mtf_header_id], references: [id])
+  item                  ItemLibrary    @relation(fields: [item_id], references: [id])
+  stf_order_lines       STF_OrderLine[]
+}
+
+model STF_Order {
+  id                     Int            @id @default(autoincrement())
+  STF_ID                String         @unique
+  project_id            Int
+  discipline_id         Int
+  supplier_id           Int
+  date_created          DateTime
+  created_by            Int
+  status                String
+  current_approval_level Int
+  total_value           Float
+  project               Project        @relation(fields: [project_id], references: [id])
+  discipline            Discipline     @relation(fields: [discipline_id], references: [id])
+  supplier              Supplier       @relation(fields: [supplier_id], references: [id])
+  creator               User           @relation("STFOrderCreatedBy", fields: [created_by], references: [id])
+  stf_order_lines       STF_OrderLine[]
+  stf_history_logs      STF_History_Log[]
+}
+
+model STF_OrderLine {
+  id                  Int          @id @default(autoincrement())
+  stf_order_id       Int
+  mtf_line_id        Int
+  material_description String
+  order_qty          Float
+  unit_price         Float
+  stf_order          STF_Order    @relation(fields: [stf_order_id], references: [id])
+  mtf_line           MTF_Line     @relation(fields: [mtf_line_id], references: [id])
+  otf_order_lines    OTF_OrderLine[]
+}
+
+model OTF_Order {
+  id                     Int            @id @default(autoincrement())
+  OTF_ID                String         @unique
+  project_id            Int
+  discipline_id         Int
+  date_created          DateTime
+  created_by            Int
+  status                String
+  current_approval_level Int
+  total_value           Float
+  invoice_no            String?
+  invoice_date          DateTime?
+  project               Project        @relation(fields: [project_id], references: [id])
+  discipline            Discipline     @relation(fields: [discipline_id], references: [id])
+  creator               User           @relation("OTFOrderCreatedBy", fields: [created_by], references: [id])
+  otf_order_lines       OTF_OrderLine[]
+  otf_history_logs      OTF_History_Log[]
+}
+
+model OTF_OrderLine {
+  id                Int           @id @default(autoincrement())
+  otf_order_id     Int
+  stf_order_line_id Int
+  order_qty        Float
+  unit_price       Float
+  otf_order        OTF_Order     @relation(fields: [otf_order_id], references: [id])
+  stf_order_line   STF_OrderLine @relation(fields: [stf_order_line_id], references: [id])
+  mrf_lines        MRF_Line[]
+}
+
+model MRF_Header {
+  id                     Int            @id @default(autoincrement())
+  MRF_ID                String         @unique
+  project_id            Int
+  discipline_id         Int
+  date_created          DateTime
+  created_by            Int
+  status                String
+  current_approval_level Int
+  project               Project        @relation(fields: [project_id], references: [id])
+  discipline            Discipline     @relation(fields: [discipline_id], references: [id])
+  creator               User           @relation("MRFHeaderCreatedBy", fields: [created_by], references: [id])
+  mrf_lines             MRF_Line[]
+  mrf_history_logs      MRF_History_Log[]
+}
+
+model MRF_Line {
+  id                  Int          @id @default(autoincrement())
+  mrf_header_id      Int
+  otf_order_line_id  Int
+  received_qty       Float
+  mrf_header         MRF_Header   @relation(fields: [mrf_header_id], references: [id])
+  otf_order_line     OTF_OrderLine @relation(fields: [otf_order_line_id], references: [id])
+  mdf_issue_lines    MDF_IssueLine[]
+}
+
+model MDF_Issue {
+  id            Int        @id @default(autoincrement())
+  issue_id     String     @unique
+  date_created DateTime
+  project_id   Int
+  created_by   Int
+  project      Project    @relation(fields: [project_id], references: [id])
+  creator      User       @relation("MDFIssueCreatedBy", fields: [created_by], references: [id])
+  mdf_issue_lines MDF_IssueLine[]
+}
+
+model MDF_IssueLine {
+  id             Int           @id @default(autoincrement())
+  mdf_issue_id  Int
+  mrf_line_id   Int
+  delivered_qty Float
+  mdf_issue     MDF_Issue     @relation(fields: [mdf_issue_id], references: [id])
+  mrf_line      MRF_Line      @relation(fields: [mrf_line_id], references: [id])
+}
+
+model MTF_History_Log {
+  id             Int            @id @default(autoincrement())
+  mtfHeaderId   Int
+  mtfIdString   String
+  action        String
+  actorId       Int
+  timestamp     DateTime
+  fromStatus    String?
+  toStatus      String
+  details       String
+  mtf_header    MTF_Header     @relation(fields: [mtfHeaderId], references: [id])
+}
+
+model STF_History_Log {
+  id           Int            @id @default(autoincrement())
+  stfHeaderId Int
+  stfIdString String
+  action      String
+  actorId     Int
+  timestamp   DateTime
+  fromStatus  String?
+  toStatus    String
+  details     String
+  stf_order   STF_Order      @relation(fields: [stfHeaderId], references: [id])
+}
+
+model OTF_History_Log {
+  id           Int            @id @default(autoincrement())
+  otfHeaderId Int
+  otfIdString String
+  action      String
+  actorId     Int
+  timestamp   DateTime
+  fromStatus  String?
+  toStatus    String
+  details     String
+  otf_order   OTF_Order      @relation(fields: [otfHeaderId], references: [id])
+}
+
+model MRF_History_Log {
+  id           Int            @id @default(autoincrement())
+  mrfHeaderId Int
+  mrfIdString String
+  action      String
+  actorId     Int
+  timestamp   DateTime
+  fromStatus  String?
+  toStatus    String
+  details     String
+  mrf_header  MRF_Header     @relation(fields: [mrfHeaderId], references: [id])
+}
