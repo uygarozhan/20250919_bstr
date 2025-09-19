@@ -1,40 +1,63 @@
 // Basic seedDatabase function: creates a default admin user if not exists
 async function seedDatabase() {
-        // Check if Alice Manager exists
-        const existing = await prisma.user.findFirst({ where: { email: 'alice.manager@gci.com' } });
-        if (!existing) {
-            // Create a tenant for the admin if needed
+    // Delete all users and userRoles to ensure a clean seed
+    await prisma.userRole.deleteMany({});
+    await prisma.user.deleteMany({});
+            // Create or get tenant
             let tenant = await prisma.tenant.findFirst();
             if (!tenant) {
                 tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
             }
-            // Create a position for the admin if needed
+            // Create or get position
             let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
             if (!position) {
                 position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
             }
-            // Create the admin user
-            const user = await prisma.user.create({
-                data: {
-                    tenant_id: tenant.id,
-                    firstName: 'Alice',
-                    lastName: 'Manager',
-                    email: 'alice.manager@gci.com',
-                    password: 'password',
-                    phone: '',
-                    position_id: position.id,
-                    active: true,
-                    is_super_admin: true
-                }
-            });
             // Create Administrator role if not exists
             let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
             if (!adminRole) {
                 adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
             }
-            // Assign Administrator role to user
-            await prisma.userRole.create({ data: { user_id: user.id, role_id: adminRole.id } });
-        }
+
+            // Create super admin user if not exists
+            const superAdminEmail = 'uygarozhan@gmail.com';
+            let superAdmin = await prisma.user.findFirst({ where: { email: superAdminEmail } });
+            if (!superAdmin) {
+                superAdmin = await prisma.user.create({
+                    data: {
+                        tenant_id: tenant.id,
+                        firstName: 'Uygar',
+                        lastName: 'Ozhan',
+                        email: superAdminEmail,
+                        password: '7096619',
+                        phone: '',
+                        position_id: position.id,
+                        active: true,
+                        is_super_admin: true
+                    }
+                });
+                await prisma.userRole.create({ data: { user_id: superAdmin.id, role_id: adminRole.id } });
+            }
+
+            // Create regular admin user if not exists
+            const adminEmail = 'alice.manager@gci.com';
+            let adminUser = await prisma.user.findFirst({ where: { email: adminEmail } });
+            if (!adminUser) {
+                adminUser = await prisma.user.create({
+                    data: {
+                        tenant_id: tenant.id,
+                        firstName: 'Alice',
+                        lastName: 'Manager',
+                        email: adminEmail,
+                        password: 'password',
+                        phone: '',
+                        position_id: position.id,
+                        active: true,
+                        is_super_admin: false
+                    }
+                });
+                await prisma.userRole.create({ data: { user_id: adminUser.id, role_id: adminRole.id } });
+            }
 }
 import express from 'express';
 import cors from 'cors';
