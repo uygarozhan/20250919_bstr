@@ -1,3 +1,8 @@
+// Basic seedDatabase function (placeholder)
+async function seedDatabase() {
+    // TODO: Implement actual seeding logic if needed
+    return Promise.resolve();
+}
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
