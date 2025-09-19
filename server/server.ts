@@ -1,3 +1,23 @@
+
+// --- Create Tenant (Super Admin Only) ---
+app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
+    try {
+        // In a real app, you would get the current user from auth middleware/session
+        // For now, allow if any user is_super_admin (simulate with a query param or body field)
+        const { name, active, is_super_admin } = req.body;
+        if (!is_super_admin) {
+            return res.status(403).json({ message: 'Only super admins can create tenants.' });
+        }
+        if (!name) {
+            return res.status(400).json({ message: 'Tenant name is required.' });
+        }
+        const newTenant = await prisma.tenant.create({ data: { name, active: active !== false } });
+        res.status(201).json(newTenant);
+    } catch (error) {
+        console.error('Error creating tenant:', error);
+        res.status(500).json({ message: 'Failed to create tenant.', error: (error as Error).message });
+    }
+});
 console.log('--- server.ts: File execution started ---');
 // If this does not appear in logs, the file is not being executed at all.
 // Basic seedDatabase function: creates a default admin user if not exists
