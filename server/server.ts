@@ -1,40 +1,40 @@
 // Basic seedDatabase function: creates a default admin user if not exists
 async function seedDatabase() {
-    // Check if admin user exists
-    const existing = await prisma.user.findFirst({ where: { email: 'admin' } });
-    if (!existing) {
-        // Create a tenant for the admin if needed
-        let tenant = await prisma.tenant.findFirst();
-        if (!tenant) {
-            tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
-        }
-        // Create a position for the admin if needed
-        let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
-        if (!position) {
-            position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
-        }
-        // Create the admin user
-        const user = await prisma.user.create({
-            data: {
-                tenant_id: tenant.id,
-                firstName: 'Admin',
-                lastName: 'User',
-                email: 'admin',
-                password: 'password',
-                phone: '',
-                position_id: position.id,
-                active: true,
-                is_super_admin: true
+        // Check if Alice Manager exists
+        const existing = await prisma.user.findFirst({ where: { email: 'alice.manager@gci.com' } });
+        if (!existing) {
+            // Create a tenant for the admin if needed
+            let tenant = await prisma.tenant.findFirst();
+            if (!tenant) {
+                tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
             }
-        });
-        // Create Administrator role if not exists
-        let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
-        if (!adminRole) {
-            adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
+            // Create a position for the admin if needed
+            let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
+            if (!position) {
+                position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
+            }
+            // Create the admin user
+            const user = await prisma.user.create({
+                data: {
+                    tenant_id: tenant.id,
+                    firstName: 'Alice',
+                    lastName: 'Manager',
+                    email: 'alice.manager@gci.com',
+                    password: 'password',
+                    phone: '',
+                    position_id: position.id,
+                    active: true,
+                    is_super_admin: true
+                }
+            });
+            // Create Administrator role if not exists
+            let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
+            if (!adminRole) {
+                adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
+            }
+            // Assign Administrator role to user
+            await prisma.userRole.create({ data: { user_id: user.id, role_id: adminRole.id } });
         }
-        // Assign Administrator role to user
-        await prisma.userRole.create({ data: { user_id: user.id, role_id: adminRole.id } });
-    }
 }
 import express from 'express';
 import cors from 'cors';
