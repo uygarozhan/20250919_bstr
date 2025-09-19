@@ -1,63 +1,86 @@
+console.log('--- server.ts: File execution started ---');
+// If this does not appear in logs, the file is not being executed at all.
 // Basic seedDatabase function: creates a default admin user if not exists
 async function seedDatabase() {
+    console.log('Entered seedDatabase...');
     // Delete all users and userRoles to ensure a clean seed
     await prisma.userRole.deleteMany({});
+    console.log('Deleted all userRoles');
     await prisma.user.deleteMany({});
+    console.log('Deleted all users');
+
+    console.log('Seeding users...');
             // Create or get tenant
-            let tenant = await prisma.tenant.findFirst();
-            if (!tenant) {
-                tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
-            }
+    let tenant = await prisma.tenant.findFirst();
+    if (!tenant) {
+        tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
+        console.log('Created tenant:', tenant);
+    } else {
+        console.log('Found existing tenant:', tenant);
+    }
             // Create or get position
-            let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
-            if (!position) {
-                position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
-            }
+    let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
+    if (!position) {
+        position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
+        console.log('Created position:', position);
+    } else {
+        console.log('Found existing position:', position);
+    }
             // Create Administrator role if not exists
-            let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
-            if (!adminRole) {
-                adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
-            }
+    let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
+    if (!adminRole) {
+        adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
+        console.log('Created admin role:', adminRole);
+    } else {
+        console.log('Found existing admin role:', adminRole);
+    }
 
             // Create super admin user if not exists
             const superAdminEmail = 'uygarozhan@gmail.com';
-            let superAdmin = await prisma.user.findFirst({ where: { email: superAdminEmail } });
-            if (!superAdmin) {
-                superAdmin = await prisma.user.create({
-                    data: {
-                        tenant_id: tenant.id,
-                        firstName: 'Uygar',
-                        lastName: 'Ozhan',
-                        email: superAdminEmail,
-                        password: '7096619',
-                        phone: '',
-                        position_id: position.id,
-                        active: true,
-                        is_super_admin: true
-                    }
-                });
-                await prisma.userRole.create({ data: { user_id: superAdmin.id, role_id: adminRole.id } });
+    let superAdmin = await prisma.user.findFirst({ where: { email: superAdminEmail } });
+    if (!superAdmin) {
+        superAdmin = await prisma.user.create({
+            data: {
+                tenant_id: tenant.id,
+                firstName: 'Uygar',
+                lastName: 'Ozhan',
+                email: superAdminEmail,
+                password: '7096619',
+                phone: '',
+                position_id: position.id,
+                active: true,
+                is_super_admin: true
             }
+        });
+        await prisma.userRole.create({ data: { user_id: superAdmin.id, role_id: adminRole.id } });
+        console.log(`Created super admin: ${superAdmin.email}, is_super_admin: ${superAdmin.is_super_admin}`);
+    } else {
+        console.log(`Super admin already exists: ${superAdmin.email}, is_super_admin: ${superAdmin.is_super_admin}`);
+    }
 
             // Create regular admin user if not exists
             const adminEmail = 'alice.manager@gci.com';
-            let adminUser = await prisma.user.findFirst({ where: { email: adminEmail } });
-            if (!adminUser) {
-                adminUser = await prisma.user.create({
-                    data: {
-                        tenant_id: tenant.id,
-                        firstName: 'Alice',
-                        lastName: 'Manager',
-                        email: adminEmail,
-                        password: 'password',
-                        phone: '',
-                        position_id: position.id,
-                        active: true,
-                        is_super_admin: false
-                    }
-                });
-                await prisma.userRole.create({ data: { user_id: adminUser.id, role_id: adminRole.id } });
+    let adminUser = await prisma.user.findFirst({ where: { email: adminEmail } });
+    if (!adminUser) {
+        adminUser = await prisma.user.create({
+            data: {
+                tenant_id: tenant.id,
+                firstName: 'Alice',
+                lastName: 'Manager',
+                email: adminEmail,
+                password: 'password',
+                phone: '',
+                position_id: position.id,
+                active: true,
+                is_super_admin: false
             }
+        });
+        await prisma.userRole.create({ data: { user_id: adminUser.id, role_id: adminRole.id } });
+        console.log(`Created admin: ${adminUser.email}, is_super_admin: ${adminUser.is_super_admin}`);
+    } else {
+        console.log(`Admin already exists: ${adminUser.email}, is_super_admin: ${adminUser.is_super_admin}`);
+    }
+    console.log('seedDatabase completed all steps.');
 }
 import express from 'express';
 import cors from 'cors';
@@ -66,6 +89,7 @@ import { AppData, Role, User, RoleName, Currency, WorkflowStatus } from '../type
 
 const app = express();
 const prisma = new PrismaClient();
+console.log('--- server.ts: PrismaClient initialized ---');
 const PORT = 3001;
 
 app.use(cors());
@@ -597,10 +621,15 @@ app.get('/api/v1/all-data', async (req: express.Request, res: express.Response) 
 app.post('/api/v1/reset-db', async (req: express.Request, res: express.Response) => {
     console.log('Received request to reset database...');
     try {
+        console.log('Calling seedDatabase...');
         await seedDatabase();
+        console.log('seedDatabase finished.');
         res.status(200).json({ message: 'Database reset and seeded successfully.' });
     } catch (error) {
         console.error("Database reset failed:", error);
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+        }
         res.status(500).json({ message: (error as Error).message });
     }
 });
