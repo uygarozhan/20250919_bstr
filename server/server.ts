@@ -1,3 +1,15 @@
+import express from 'express';
+import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
+import { AppData, Role, User, RoleName, Currency, WorkflowStatus } from '../types';
+
+const app = express();
+const prisma = new PrismaClient();
+console.log('--- server.ts: PrismaClient initialized ---');
+const PORT = 3001;
+
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 
 // --- Create Tenant (Super Admin Only) ---
 app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
@@ -102,18 +114,6 @@ async function seedDatabase() {
     }
     console.log('seedDatabase completed all steps.');
 }
-import express from 'express';
-import cors from 'cors';
-import { PrismaClient } from '@prisma/client';
-import { AppData, Role, User, RoleName, Currency, WorkflowStatus } from '../types';
-
-const app = express();
-const prisma = new PrismaClient();
-console.log('--- server.ts: PrismaClient initialized ---');
-const PORT = 3001;
-
-app.use(cors());
-app.use(express.json({ limit: '10mb' }));
 
 // ...existing code...
 
