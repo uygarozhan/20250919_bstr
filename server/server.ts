@@ -2,7 +2,7 @@
 
 // --- API Endpoints ---
 // ...existing code...
-// Create Tenant and Initial Admin
+// Create Tenant and Initial Admin (moved below app declaration)
 app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
     try {
         const { tenantName, adminUser, adminPositionName } = req.body;
