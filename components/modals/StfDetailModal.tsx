@@ -53,7 +53,7 @@ export const StfDetailModal: React.FC<StfDetailModalProps> = ({ isOpen, onClose,
         const item = mtfLine ? items.find(i => i.id === mtfLine.item_id) : null;
         // This part is a bit tricky without full access to all MTF headers, so we make an assumption
         // In a real app, you would likely fetch the MTF header based on mtfLine.mtf_header_id
-        const mtfId = `MTF-${mtfLine?.mtf_header_id.toString().padStart(4,'0')}` ?? 'N/A';
+        const mtfId = mtfLine ? `MTF-${mtfLine.mtf_header_id.toString().padStart(4,'0')}` : 'N/A';
 
         return {
             ...stfLine,
