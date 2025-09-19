@@ -153,7 +153,7 @@ app.put('/api/v1/mtf/:id/revise', async (req: express.Request, res: express.Resp
         // Create new lines
         const newLines = await prisma.mTF_Line.createMany({
             data: mtfData.lines.map((line: any) => {
-                const libraryItem = items.find(item => item.id === line.itemId)!;
+                const libraryItem = items.find((item: any) => item.id === line.itemId)!;
                 const unitPrice = libraryItem.budget_unit_price || 0;
                 return {
                     mtf_header_id: mtfHeaderId,
@@ -347,7 +347,7 @@ app.get('/api/v1/all-data/:tenantId', async (req: express.Request, res: express.
 
         // Convert Prisma types to match the AppData interface
         const appData: AppData = {
-            users: users.map(user => {
+            users: users.map((user: any) => {
                 const { password, ...userWithoutPassword } = user;
                 return {
                     ...userWithoutPassword,
@@ -360,80 +360,80 @@ app.get('/api/v1/all-data/:tenantId', async (req: express.Request, res: express.
                 };
             }) as any[],
             tenants, 
-            projects: projects.map(p => ({
+            projects: projects.map((p: any) => ({
                 ...p,
                 base_currency: p.base_currency as Currency
             })) as any[], 
             disciplines, 
             positions, 
             suppliers, 
-            items: items.map(i => ({
+            items: items.map((i: any) => ({
                 ...i,
                 budget_unit_price: i.budget_unit_price ?? undefined,
                 material_description: i.material_description || undefined
             })) as any[], 
-            roles: roles.map(r => ({
+            roles: roles.map((r: any) => ({
                 ...r,
                 level: r.level ?? undefined,
                 name: r.name as RoleName
             })) as any[], 
-            mtfHeaders: mtfHeaders.map(h => ({
+            mtfHeaders: mtfHeaders.map((h: any) => ({
                 ...h,
                 status: h.status as WorkflowStatus,
                 date_created: h.date_created.toISOString()
             })) as any[], 
-            mtfLines: mtfLines.map(l => ({
+            mtfLines: mtfLines.map((l: any) => ({
                 ...l,
                 status: l.status as WorkflowStatus
             })) as any[],
-            mtfHistory: mtfHistory.map(h => ({
+            mtfHistory: mtfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            stfOrders: stfOrders.map(o => ({
+            stfOrders: stfOrders.map((o: any) => ({
                 ...o,
                 status: o.status as WorkflowStatus,
                 date_created: o.date_created.toISOString()
             })) as any[], 
             stfOrderLines, 
-            stfHistory: stfHistory.map(h => ({
+            stfHistory: stfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            otfOrders: otfOrders.map(o => ({
+            otfOrders: otfOrders.map((o: any) => ({
                 ...o,
                 status: o.status as WorkflowStatus,
                 date_created: o.date_created.toISOString(),
                 invoice_date: o.invoice_date ? o.invoice_date.toISOString() : undefined
             })) as any[], 
             otfOrderLines, 
-            otfHistory: otfHistory.map(h => ({
+            otfHistory: otfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            mrfHeaders: mrfHeaders.map(h => ({
+            mrfHeaders: mrfHeaders.map((h: any) => ({
                 ...h,
                 status: h.status as WorkflowStatus,
                 date_created: h.date_created.toISOString()
             })) as any[], 
             mrfLines, 
-            mrfHistory: mrfHistory.map(h => ({
+            mrfHistory: mrfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            mdfIssues: mdfIssues.map(i => ({
+            mdfIssues: mdfIssues.map((i: any) => ({
                 ...i,
                 date_created: i.date_created.toISOString()
             })) as any[], 
@@ -492,7 +492,7 @@ app.get('/api/v1/all-data', async (req: express.Request, res: express.Response) 
 
         // Convert Prisma types to match the AppData interface
         const appData: AppData = {
-            users: users.map(user => {
+            users: users.map((user: any) => {
                 const { password, ...userWithoutPassword } = user;
                 return {
                     ...userWithoutPassword,
@@ -505,80 +505,80 @@ app.get('/api/v1/all-data', async (req: express.Request, res: express.Response) 
                 };
             }) as any[],
             tenants, 
-            projects: projects.map(p => ({
+            projects: projects.map((p: any) => ({
                 ...p,
                 base_currency: p.base_currency as Currency
             })) as any[], 
             disciplines, 
             positions, 
             suppliers, 
-            items: items.map(i => ({
+            items: items.map((i: any) => ({
                 ...i,
                 budget_unit_price: i.budget_unit_price ?? undefined,
                 material_description: i.material_description || undefined
             })) as any[], 
-            roles: roles.map(r => ({
+            roles: roles.map((r: any) => ({
                 ...r,
                 level: r.level ?? undefined,
                 name: r.name as RoleName
             })) as any[], 
-            mtfHeaders: mtfHeaders.map(h => ({
+            mtfHeaders: mtfHeaders.map((h: any) => ({
                 ...h,
                 status: h.status as WorkflowStatus,
                 date_created: h.date_created.toISOString()
             })) as any[], 
-            mtfLines: mtfLines.map(l => ({
+            mtfLines: mtfLines.map((l: any) => ({
                 ...l,
                 status: l.status as WorkflowStatus
             })) as any[],
-            mtfHistory: mtfHistory.map(h => ({
+            mtfHistory: mtfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            stfOrders: stfOrders.map(o => ({
+            stfOrders: stfOrders.map((o: any) => ({
                 ...o,
                 status: o.status as WorkflowStatus,
                 date_created: o.date_created.toISOString()
             })) as any[], 
             stfOrderLines, 
-            stfHistory: stfHistory.map(h => ({
+            stfHistory: stfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            otfOrders: otfOrders.map(o => ({
+            otfOrders: otfOrders.map((o: any) => ({
                 ...o,
                 status: o.status as WorkflowStatus,
                 date_created: o.date_created.toISOString(),
                 invoice_date: o.invoice_date ? o.invoice_date.toISOString() : undefined
             })) as any[], 
             otfOrderLines, 
-            otfHistory: otfHistory.map(h => ({
+            otfHistory: otfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected" | "Revised" | "Closed",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            mrfHeaders: mrfHeaders.map(h => ({
+            mrfHeaders: mrfHeaders.map((h: any) => ({
                 ...h,
                 status: h.status as WorkflowStatus,
                 date_created: h.date_created.toISOString()
             })) as any[], 
             mrfLines, 
-            mrfHistory: mrfHistory.map(h => ({
+            mrfHistory: mrfHistory.map((h: any) => ({
                 ...h,
                 timestamp: h.timestamp.toISOString(),
                 action: h.action as "Created" | "Approved" | "Rejected",
                 fromStatus: h.fromStatus as WorkflowStatus | undefined,
                 toStatus: h.toStatus as WorkflowStatus
             })) as any[], 
-            mdfIssues: mdfIssues.map(i => ({
+            mdfIssues: mdfIssues.map((i: any) => ({
                 ...i,
                 date_created: i.date_created.toISOString()
             })) as any[], 
