@@ -952,10 +952,16 @@ const App: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
+                // Prepare payload for backend
+                const payload = {
+                    name: data.tenantName,
+                    active: true,
+                    is_super_admin: currentUser.is_super_admin === true
+                };
                 const response = await fetch(`${API_BASE_URL}/tenant`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
                 if (!response.ok) {
                     throw new Error('Failed to create tenant');
