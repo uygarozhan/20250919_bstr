@@ -35,14 +35,71 @@ console.log('--- server.ts: File execution started ---');
 // Basic seedDatabase function: creates a default admin user if not exists
 async function seedDatabase() {
     console.log('Entered seedDatabase...');
-    // Delete all users and userRoles to ensure a clean seed
+
+
+    // Delete all user-related records to avoid foreign key constraint errors
+    // Delete all dependent records in the correct order
+    await prisma.mDF_IssueLine.deleteMany({});
+    await prisma.mRF_Line.deleteMany({});
+    await prisma.oTF_OrderLine.deleteMany({});
+    await prisma.sTF_OrderLine.deleteMany({});
+    await prisma.mTF_Line.deleteMany({});
+    await prisma.mTF_History_Log.deleteMany({});
+    await prisma.sTF_History_Log.deleteMany({});
+    await prisma.oTF_History_Log.deleteMany({});
+    await prisma.mRF_History_Log.deleteMany({});
+    console.log('Deleted all lines and logs');
+    await prisma.mDF_Issue.deleteMany({});
+    await prisma.mRF_Header.deleteMany({});
+    await prisma.oTF_Order.deleteMany({});
+    await prisma.sTF_Order.deleteMany({});
+    await prisma.mTF_Header.deleteMany({});
+    console.log('Deleted all headers/orders/issues');
     await prisma.userRole.deleteMany({});
-    console.log('Deleted all userRoles');
+    await prisma.userDiscipline.deleteMany({});
+    console.log('Deleted all userRole and userDiscipline');
+    await prisma.userProject.deleteMany({});
+    console.log('Deleted all userProjects');
     await prisma.user.deleteMany({});
     console.log('Deleted all users');
+    await prisma.project.deleteMany({});
+    await prisma.discipline.deleteMany({});
+    await prisma.position.deleteMany({});
+    await prisma.supplier.deleteMany({});
+    await prisma.itemLibrary.deleteMany({});
+    console.log('Deleted all projects, disciplines, positions, suppliers, items');
+    await prisma.tenant.deleteMany({});
+    console.log('Deleted all tenants');
+
+    // Seed all standard roles
+    const standardRoles = [
+        { name: 'Administrator' },
+        { name: 'Requester' },
+        { name: 'MTF_Approver', level: 1 },
+        { name: 'MTF_Approver', level: 2 },
+        { name: 'MTF_Approver', level: 3 },
+        { name: 'STF_Initiator' },
+        { name: 'STF_Approver', level: 1 },
+        { name: 'STF_Approver', level: 2 },
+        { name: 'STF_Approver', level: 3 },
+        { name: 'OTF_Initiator' },
+        { name: 'OTF_Approver', level: 1 },
+        { name: 'OTF_Approver', level: 2 },
+        { name: 'OTF_Approver', level: 3 },
+        { name: 'MRF_Initiator' },
+        { name: 'MRF_Approver', level: 1 },
+        { name: 'Viewer' }
+    ];
+    for (const role of standardRoles) {
+        const existing = await prisma.role.findFirst({ where: { name: role.name, level: role.level ?? null } });
+        if (!existing) {
+            await prisma.role.create({ data: { name: role.name, level: role.level ?? null } });
+            console.log('Created role:', role);
+        }
+    }
 
     console.log('Seeding users...');
-            // Create or get tenant
+    // Create or get tenant
     let tenant = await prisma.tenant.findFirst();
     if (!tenant) {
         tenant = await prisma.tenant.create({ data: { name: 'Default Tenant', active: true } });
@@ -50,7 +107,7 @@ async function seedDatabase() {
     } else {
         console.log('Found existing tenant:', tenant);
     }
-            // Create or get position
+    // Create or get position
     let position = await prisma.position.findFirst({ where: { tenant_id: tenant.id } });
     if (!position) {
         position = await prisma.position.create({ data: { tenant_id: tenant.id, name: 'Administrator' } });
@@ -58,7 +115,7 @@ async function seedDatabase() {
     } else {
         console.log('Found existing position:', position);
     }
-            // Create Administrator role if not exists
+    // Create Administrator role if not exists
     let adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
     if (!adminRole) {
         adminRole = await prisma.role.create({ data: { name: 'Administrator' } });
@@ -535,7 +592,10 @@ app.get('/api/v1/all-data', async (req: express.Request, res: express.Response) 
         ]);
 
         // Convert Prisma types to match the AppData interface
-        const appData: AppData = {
+    // Debug: Log roles being returned
+    console.log(`[all-data] Returning ${roles.length} roles:`, roles.map(r => r.name));
+
+    const appData: AppData = {
             users: users.map(user => {
                 const { password, ...userWithoutPassword } = user;
                 return {
