@@ -10,112 +10,6 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-
-// --- Create Tenant (Super Admin Only) ---
-app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
-// --- Update Tenant and Admin User (Super Admin Only) ---
-app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
-    console.log('PUT /api/v1/tenant/:id called with body:', req.body);
-    try {
-        const tenantId = parseInt(req.params.id, 10);
-        const { name, active, is_super_admin, adminUser } = req.body;
-        console.log('Parsed tenantId:', tenantId, 'name:', name, 'active:', active, 'is_super_admin:', is_super_admin, 'adminUser:', adminUser);
-        if (!is_super_admin) {
-            console.log('Not super admin, returning 403');
-            return res.status(403).json({ message: 'Only super admins can update tenants.' });
-        }
-        if (!name) {
-            console.log('No tenant name, returning 400');
-            return res.status(400).json({ message: 'Tenant name is required.' });
-        }
-        // Update the tenant
-        const updatedTenant = await prisma.tenant.update({
-            where: { id: tenantId },
-            data: { name, active: active !== false }
-        });
-        console.log('Updated tenant:', updatedTenant);
-
-        let updatedAdminUser = null;
-        if (adminUser && adminUser.id) {
-            // Update the admin user for the tenant
-            const updateData: any = {
-                firstName: adminUser.firstName,
-                lastName: adminUser.lastName,
-                email: adminUser.email,
-                phone: adminUser.phone || '',
-            };
-            if (adminUser.password && adminUser.password.length > 0) {
-                updateData.password = adminUser.password; // In production, hash this!
-            }
-            console.log('Updating admin user with data:', updateData);
-            updatedAdminUser = await prisma.user.update({
-                where: { id: adminUser.id },
-                data: updateData,
-                include: { user_roles: { include: { role: true } }, position: true }
-            });
-            console.log('Updated admin user:', updatedAdminUser);
-        }
-        res.status(200).json({ tenant: updatedTenant, adminUser: updatedAdminUser });
-    } catch (error) {
-        console.error('Error updating tenant:', error);
-        if (error instanceof Error) {
-            console.error('Error stack:', error.stack);
-        } else {
-            console.error('Error (non-Error object):', JSON.stringify(error));
-        }
-        res.status(500).json({ message: 'Failed to update tenant.', error: (error as any).message || error });
-    }
-});
-    try {
-        // In a real app, you would get the current user from auth middleware/session
-        // For now, allow if any user is_super_admin (simulate with a query param or body field)
-        const { name, active, is_super_admin, adminUser } = req.body;
-        if (!is_super_admin) {
-            return res.status(403).json({ message: 'Only super admins can create tenants.' });
-        }
-        if (!name) {
-            return res.status(400).json({ message: 'Tenant name is required.' });
-        }
-        // Create the tenant
-        const newTenant = await prisma.tenant.create({ data: { name, active: active !== false } });
-
-        let createdAdminUser = null;
-        if (adminUser && adminUser.email && adminUser.firstName && adminUser.lastName && adminUser.password) {
-            // Find Administrator role
-            const adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
-            if (!adminRole) {
-                return res.status(500).json({ message: 'Administrator role not found.' });
-            }
-            // Find or create Administrator position for this tenant
-            let position = await prisma.position.findFirst({ where: { tenant_id: newTenant.id, name: 'Administrator' } });
-            if (!position) {
-                position = await prisma.position.create({ data: { tenant_id: newTenant.id, name: 'Administrator' } });
-            }
-            // Create the admin user for the new tenant
-            createdAdminUser = await prisma.user.create({
-                data: {
-                    email: adminUser.email,
-                    password: adminUser.password, // In production, hash this!
-                    firstName: adminUser.firstName,
-                    lastName: adminUser.lastName,
-                    phone: adminUser.phone || '',
-                    tenant_id: newTenant.id,
-                    is_super_admin: false,
-                    position_id: position.id,
-                    user_roles: {
-                        create: [{ role_id: adminRole.id }]
-                    },
-                    active: true
-                },
-                include: { user_roles: { include: { role: true } }, position: true }
-            });
-        }
-        res.status(201).json({ tenant: newTenant, adminUser: createdAdminUser });
-    } catch (error) {
-        console.error('Error creating tenant:', error);
-        res.status(500).json({ message: 'Failed to create tenant.', error: (error as Error).message });
-    }
-});
 console.log('--- server.ts: File execution started ---');
 // If this does not appear in logs, the file is not being executed at all.
 // Basic seedDatabase function: creates a default admin user if not exists
@@ -1265,7 +1159,9 @@ app.post('/api/v1/user', async (req: express.Request, res: express.Response) => 
     }
 });
 
+
+
 // --- Start Server ---
 app.listen(PORT, () => {
-  console.log(`🚀 Server is running at http://localhost:${PORT}`);
+    console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });
