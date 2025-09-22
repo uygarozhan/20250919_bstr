@@ -50,8 +50,13 @@ app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response
         }
         res.status(200).json({ tenant: updatedTenant, adminUser: updatedAdminUser });
     } catch (error) {
-        console.error('Error updating tenant:', error);
-        res.status(500).json({ message: 'Failed to update tenant.', error: (error as Error).message });
+          console.error('Error updating tenant:', error);
+          if (error instanceof Error) {
+              console.error('Error stack:', error.stack);
+          } else {
+              console.error('Error (non-Error object):', JSON.stringify(error));
+          }
+          res.status(500).json({ message: 'Failed to update tenant.', error: (error as any).message || error });
     }
 });
     try {
