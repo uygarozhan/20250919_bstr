@@ -952,11 +952,12 @@ const App: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
-                // Prepare payload for backend
+                // Prepare payload for backend, including adminUser info
                 const payload = {
                     name: data.tenantName,
                     active: true,
-                    is_super_admin: currentUser.is_super_admin === true
+                    is_super_admin: currentUser.is_super_admin === true,
+                    adminUser: data.adminUser // includes firstName, lastName, email, phone, password
                 };
                 const response = await fetch(`${API_BASE_URL}/tenant`, {
                     method: 'POST',
