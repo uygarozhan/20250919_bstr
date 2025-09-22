@@ -18,6 +18,7 @@ export const TenantEditModal: React.FC<TenantEditModalProps> = ({ isOpen, onClos
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPhone, setAdminPhone] = useState('');
   const [adminPositionName, setAdminPositionName] = useState('Administrator');
+  const [adminPassword, setAdminPassword] = useState('');
   const [adminUserId, setAdminUserId] = useState<number | null>(null);
 
   const isAddMode = !tenantToEdit;
@@ -56,21 +57,22 @@ export const TenantEditModal: React.FC<TenantEditModalProps> = ({ isOpen, onClos
   }, [tenantToEdit, isOpen, users]);
 
   const handleSave = () => {
-     if (isAddMode) {
-        if (!name.trim() || !adminFirstName.trim() || !adminLastName.trim() || !adminEmail.trim()) {
-            alert('Please fill out all required fields for the tenant and the administrator.');
-            return;
-        }
-        onSave({
-            tenantName: name,
-            adminUser: {
-                firstName: adminFirstName,
-                lastName: adminLastName,
-                email: adminEmail,
-                phone: adminPhone,
-            },
-            adminPositionName: adminPositionName,
-        });
+   if (isAddMode) {
+    if (!name.trim() || !adminFirstName.trim() || !adminLastName.trim() || !adminEmail.trim() || !adminPassword.trim()) {
+      alert('Please fill out all required fields for the tenant and the administrator, including password.');
+      return;
+    }
+    onSave({
+      tenantName: name,
+      adminUser: {
+        firstName: adminFirstName,
+        lastName: adminLastName,
+        email: adminEmail,
+        phone: adminPhone,
+        password: adminPassword,
+      },
+      adminPositionName: adminPositionName,
+    });
     } else {
         if (!adminUserId) {
             alert('Could not find an administrator for this tenant to update.');
@@ -155,17 +157,21 @@ export const TenantEditModal: React.FC<TenantEditModalProps> = ({ isOpen, onClos
                             <label className="block text-sm font-medium text-gray-700">Phone</label>
                             <input type="tel" value={adminPhone} onChange={e => setAdminPhone(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Position Name</label>
-                            {isAddMode ? (
-                                <>
-                                    <input type="text" value={adminPositionName} onChange={e => setAdminPositionName(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
-                                    <p className="text-xs text-gray-500 mt-1">A new position with this name will be created for this tenant.</p>
-                                </>
-                            ) : (
-                                <input type="text" value={adminPositionName} readOnly className="mt-1 w-full text-sm p-2 border rounded-md bg-gray-100 cursor-not-allowed"/>
-                            )}
-                        </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Password*</label>
+              <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700">Position Name</label>
+              {isAddMode ? (
+                <>
+                  <input type="text" value={adminPositionName} onChange={e => setAdminPositionName(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
+                  <p className="text-xs text-gray-500 mt-1">A new position with this name will be created for this tenant.</p>
+                </>
+              ) : (
+                <input type="text" value={adminPositionName} readOnly className="mt-1 w-full text-sm p-2 border rounded-md bg-gray-100 cursor-not-allowed"/>
+              )}
+            </div>
                     </div>
                 </div>
               </div>
