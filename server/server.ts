@@ -99,7 +99,10 @@ app.patch('/api/v1/tenant/:id/active', async (req: express.Request, res: express
 console.log('--- server.ts: PrismaClient initialized ---');
 const PORT = 3001;
 
-app.use(cors());
+app.use(cors({
+    origin: ['https://www.basitor.com'],
+    credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 console.log('--- server.ts: File execution started ---');
 // If this does not appear in logs, the file is not being executed at all.
