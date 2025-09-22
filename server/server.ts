@@ -49,7 +49,8 @@ app.delete('/api/v1/tenant/:id', async (req: express.Request, res: express.Respo
 });
 // --- Create Tenant (Super Admin Only) ---
 app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
-    const { name, active, is_super_admin } = req.body;
+    const body = req.body || {};
+    const { name, active, is_super_admin } = body;
     if (!is_super_admin) {
         return res.status(403).json({ message: 'Only super admins can create tenants.' });
     }
@@ -65,7 +66,8 @@ app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) =
 // --- Edit Tenant (Super Admin Only) ---
 app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
     const tenantId = parseInt(req.params.id, 10);
-    const { name, is_super_admin } = req.body;
+    const body = req.body || {};
+    const { name, is_super_admin } = body;
     if (!is_super_admin) {
         return res.status(403).json({ message: 'Only super admins can edit tenants.' });
     }
@@ -81,7 +83,8 @@ app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response
 // --- Activate/Deactivate Tenant (Super Admin Only) ---
 app.patch('/api/v1/tenant/:id/active', async (req: express.Request, res: express.Response) => {
     const tenantId = parseInt(req.params.id, 10);
-    const { active, is_super_admin } = req.body;
+    const body = req.body || {};
+    const { active, is_super_admin } = body;
     if (!is_super_admin) {
         return res.status(403).json({ message: 'Only super admins can activate/deactivate tenants.' });
     }
