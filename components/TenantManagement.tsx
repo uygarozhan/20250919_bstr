@@ -51,13 +51,15 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [deletingTenantId, setDeletingTenantId] = useState<number | null>(null);
+    const [togglingTenantId, setTogglingTenantId] = useState<number | null>(null);
+
     const handleDeleteTenant = useCallback(async (tenantId: number) => {
         if (!window.confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) return;
         setDeletingTenantId(tenantId);
         try {
             const res = await fetch(`/api/v1/tenant/${tenantId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_super_admin: true }) });
             if (res.ok) {
-                window.location.reload(); // Or trigger a state update if tenants are managed in state
+                window.location.reload();
             } else {
                 const data = await res.json();
                 alert(data.message || 'Failed to delete tenant.');
@@ -66,6 +68,27 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({
             alert('Failed to delete tenant.');
         } finally {
             setDeletingTenantId(null);
+        }
+    }, []);
+
+    const handleToggleActive = useCallback(async (tenant) => {
+        setTogglingTenantId(tenant.id);
+        try {
+            const res = await fetch(`/api/v1/tenant/${tenant.id}/active`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: !tenant.active, is_super_admin: true })
+            });
+            if (res.ok) {
+                window.location.reload();
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to update tenant status.');
+            }
+        } catch (err) {
+            alert('Failed to update tenant status.');
+        } finally {
+            setTogglingTenantId(null);
         }
     }, []);
 
@@ -157,6 +180,16 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({
                                     <td className="px-6 py-4 flex items-center space-x-2">
                                         <button onClick={() => setEditingTenant(tenant)} className="text-gray-500 hover:text-blue-600 p-1" title="Edit Tenant Details"><PencilIcon /></button>
                                         <button onClick={() => setManagingTenant(tenant)} className="text-gray-500 hover:text-green-600 p-1" title="Manage Tenant Admin"><ShieldCheckIcon /></button>
+                                        <button
+                                            onClick={() => handleToggleActive(tenant)}
+                                            className={`text-gray-500 hover:text-yellow-600 p-1 ${togglingTenantId === tenant.id ? 'opacity-50 pointer-events-none' : ''}`}
+                                            title={tenant.active ? 'Deactivate Tenant' : 'Activate Tenant'}
+                                            disabled={togglingTenantId === tenant.id}
+                                        >
+                                            {togglingTenantId === tenant.id
+                                                ? (tenant.active ? 'Deactivating...' : 'Activating...')
+                                                : (tenant.active ? 'Deactivate' : 'Activate')}
+                                        </button>
                                         <button
                                             onClick={() => handleDeleteTenant(tenant.id)}
                                             className={`text-gray-500 hover:text-red-600 p-1 ${deletingTenantId === tenant.id ? 'opacity-50 pointer-events-none' : ''}`}

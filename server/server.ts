@@ -47,6 +47,52 @@ app.delete('/api/v1/tenant/:id', async (req: express.Request, res: express.Respo
         res.status(500).json({ message: 'Failed to delete tenant.', error: (error as any).message || error });
     }
 });
+// --- Create Tenant (Super Admin Only) ---
+app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
+    const { name, active, is_super_admin } = req.body;
+    if (!is_super_admin) {
+        return res.status(403).json({ message: 'Only super admins can create tenants.' });
+    }
+    try {
+        const tenant = await prisma.tenant.create({ data: { name, active: active ?? true } });
+        res.status(201).json(tenant);
+    } catch (error) {
+        console.error('Error creating tenant:', error);
+        res.status(500).json({ message: 'Failed to create tenant.', error: (error as any).message || error });
+    }
+});
+
+// --- Edit Tenant (Super Admin Only) ---
+app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const { name, is_super_admin } = req.body;
+    if (!is_super_admin) {
+        return res.status(403).json({ message: 'Only super admins can edit tenants.' });
+    }
+    try {
+        const tenant = await prisma.tenant.update({ where: { id: tenantId }, data: { name } });
+        res.status(200).json(tenant);
+    } catch (error) {
+        console.error('Error editing tenant:', error);
+        res.status(500).json({ message: 'Failed to edit tenant.', error: (error as any).message || error });
+    }
+});
+
+// --- Activate/Deactivate Tenant (Super Admin Only) ---
+app.patch('/api/v1/tenant/:id/active', async (req: express.Request, res: express.Response) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const { active, is_super_admin } = req.body;
+    if (!is_super_admin) {
+        return res.status(403).json({ message: 'Only super admins can activate/deactivate tenants.' });
+    }
+    try {
+        const tenant = await prisma.tenant.update({ where: { id: tenantId }, data: { active } });
+        res.status(200).json(tenant);
+    } catch (error) {
+        console.error('Error updating tenant active status:', error);
+        res.status(500).json({ message: 'Failed to update tenant active status.', error: (error as any).message || error });
+    }
+});
 console.log('--- server.ts: PrismaClient initialized ---');
 const PORT = 3001;
 
