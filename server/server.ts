@@ -1,3 +1,4 @@
+
 import express from 'express';
 import cors from 'cors';
 import { PrismaClient } from '@prisma/client';
@@ -5,6 +6,47 @@ import { AppData, Role, User, RoleName, Currency, WorkflowStatus } from '../type
 
 const app = express();
 const prisma = new PrismaClient();
+
+// --- Delete Tenant (Super Admin Only) ---
+app.delete('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
+    const tenantId = parseInt(req.params.id, 10);
+    const { is_super_admin } = req.body;
+    if (!is_super_admin) {
+        return res.status(403).json({ message: 'Only super admins can delete tenants.' });
+    }
+    try {
+        // Delete all related records manually to avoid foreign key constraint errors
+        await prisma.mDF_IssueLine.deleteMany({ where: { mdf_issue: { project: { tenant_id: tenantId } } } });
+        await prisma.mRF_Line.deleteMany({ where: { mrf_header: { project: { tenant_id: tenantId } } } });
+        await prisma.oTF_OrderLine.deleteMany({ where: { otf_order: { project: { tenant_id: tenantId } } } });
+        await prisma.sTF_OrderLine.deleteMany({ where: { stf_order: { project: { tenant_id: tenantId } } } });
+        await prisma.mTF_Line.deleteMany({ where: { mtf_header: { project: { tenant_id: tenantId } } } });
+        await prisma.mTF_History_Log.deleteMany({ where: { mtf_header: { project: { tenant_id: tenantId } } } });
+        await prisma.sTF_History_Log.deleteMany({ where: { stf_order: { project: { tenant_id: tenantId } } } });
+        await prisma.oTF_History_Log.deleteMany({ where: { otf_order: { project: { tenant_id: tenantId } } } });
+        await prisma.mRF_History_Log.deleteMany({ where: { mrf_header: { project: { tenant_id: tenantId } } } });
+        await prisma.mDF_Issue.deleteMany({ where: { project: { tenant_id: tenantId } } });
+        await prisma.mRF_Header.deleteMany({ where: { project: { tenant_id: tenantId } } });
+        await prisma.oTF_Order.deleteMany({ where: { project: { tenant_id: tenantId } } });
+        await prisma.sTF_Order.deleteMany({ where: { project: { tenant_id: tenantId } } });
+        await prisma.mTF_Header.deleteMany({ where: { project: { tenant_id: tenantId } } });
+        await prisma.userRole.deleteMany({ where: { user: { tenant_id: tenantId } } });
+        await prisma.userDiscipline.deleteMany({ where: { user: { tenant_id: tenantId } } });
+        await prisma.userProject.deleteMany({ where: { user: { tenant_id: tenantId } } });
+        await prisma.user.deleteMany({ where: { tenant_id: tenantId } });
+        await prisma.project.deleteMany({ where: { tenant_id: tenantId } });
+        await prisma.discipline.deleteMany({ where: { tenant_id: tenantId } });
+        await prisma.position.deleteMany({ where: { tenant_id: tenantId } });
+        await prisma.supplier.deleteMany({ where: { tenant_id: tenantId } });
+        await prisma.itemLibrary.deleteMany({ where: { tenant_id: tenantId } });
+        // Finally, delete the tenant
+        await prisma.tenant.delete({ where: { id: tenantId } });
+        res.status(200).json({ message: 'Tenant and all related data deleted successfully.' });
+    } catch (error) {
+        console.error('Error deleting tenant:', error);
+        res.status(500).json({ message: 'Failed to delete tenant.', error: (error as any).message || error });
+    }
+});
 console.log('--- server.ts: PrismaClient initialized ---');
 const PORT = 3001;
 
