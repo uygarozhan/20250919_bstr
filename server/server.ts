@@ -15,13 +15,17 @@ app.use(express.json({ limit: '10mb' }));
 app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
 // --- Update Tenant and Admin User (Super Admin Only) ---
 app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
+    console.log('PUT /api/v1/tenant/:id called with body:', req.body);
     try {
         const tenantId = parseInt(req.params.id, 10);
         const { name, active, is_super_admin, adminUser } = req.body;
+        console.log('Parsed tenantId:', tenantId, 'name:', name, 'active:', active, 'is_super_admin:', is_super_admin, 'adminUser:', adminUser);
         if (!is_super_admin) {
+            console.log('Not super admin, returning 403');
             return res.status(403).json({ message: 'Only super admins can update tenants.' });
         }
         if (!name) {
+            console.log('No tenant name, returning 400');
             return res.status(400).json({ message: 'Tenant name is required.' });
         }
         // Update the tenant
@@ -29,6 +33,7 @@ app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response
             where: { id: tenantId },
             data: { name, active: active !== false }
         });
+        console.log('Updated tenant:', updatedTenant);
 
         let updatedAdminUser = null;
         if (adminUser && adminUser.id) {
@@ -42,21 +47,23 @@ app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response
             if (adminUser.password && adminUser.password.length > 0) {
                 updateData.password = adminUser.password; // In production, hash this!
             }
+            console.log('Updating admin user with data:', updateData);
             updatedAdminUser = await prisma.user.update({
                 where: { id: adminUser.id },
                 data: updateData,
                 include: { user_roles: { include: { role: true } }, position: true }
             });
+            console.log('Updated admin user:', updatedAdminUser);
         }
         res.status(200).json({ tenant: updatedTenant, adminUser: updatedAdminUser });
     } catch (error) {
-          console.error('Error updating tenant:', error);
-          if (error instanceof Error) {
-              console.error('Error stack:', error.stack);
-          } else {
-              console.error('Error (non-Error object):', JSON.stringify(error));
-          }
-          res.status(500).json({ message: 'Failed to update tenant.', error: (error as any).message || error });
+        console.error('Error updating tenant:', error);
+        if (error instanceof Error) {
+            console.error('Error stack:', error.stack);
+        } else {
+            console.error('Error (non-Error object):', JSON.stringify(error));
+        }
+        res.status(500).json({ message: 'Failed to update tenant.', error: (error as any).message || error });
     }
 });
     try {
