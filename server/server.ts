@@ -33,6 +33,11 @@ app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) =
             if (!adminRole) {
                 return res.status(500).json({ message: 'Administrator role not found.' });
             }
+            // Find or create Administrator position for this tenant
+            let position = await prisma.position.findFirst({ where: { tenant_id: newTenant.id, name: 'Administrator' } });
+            if (!position) {
+                position = await prisma.position.create({ data: { tenant_id: newTenant.id, name: 'Administrator' } });
+            }
             // Create the admin user for the new tenant
             createdAdminUser = await prisma.user.create({
                 data: {
@@ -43,12 +48,13 @@ app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) =
                     phone: adminUser.phone || '',
                     tenant_id: newTenant.id,
                     is_super_admin: false,
+                    position_id: position.id,
                     user_roles: {
                         create: [{ role_id: adminRole.id }]
                     },
                     active: true
                 },
-                include: { user_roles: { include: { role: true } } }
+                include: { user_roles: { include: { role: true } }, position: true }
             });
         }
         res.status(201).json({ tenant: newTenant, adminUser: createdAdminUser });
