@@ -16,15 +16,42 @@ app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) =
     try {
         // In a real app, you would get the current user from auth middleware/session
         // For now, allow if any user is_super_admin (simulate with a query param or body field)
-        const { name, active, is_super_admin } = req.body;
+        const { name, active, is_super_admin, adminUser } = req.body;
         if (!is_super_admin) {
             return res.status(403).json({ message: 'Only super admins can create tenants.' });
         }
         if (!name) {
             return res.status(400).json({ message: 'Tenant name is required.' });
         }
+        // Create the tenant
         const newTenant = await prisma.tenant.create({ data: { name, active: active !== false } });
-        res.status(201).json(newTenant);
+
+        let createdAdminUser = null;
+        if (adminUser && adminUser.email && adminUser.firstName && adminUser.lastName && adminUser.password) {
+            // Find Administrator role
+            const adminRole = await prisma.role.findFirst({ where: { name: 'Administrator' } });
+            if (!adminRole) {
+                return res.status(500).json({ message: 'Administrator role not found.' });
+            }
+            // Create the admin user for the new tenant
+            createdAdminUser = await prisma.user.create({
+                data: {
+                    email: adminUser.email,
+                    password: adminUser.password, // In production, hash this!
+                    firstName: adminUser.firstName,
+                    lastName: adminUser.lastName,
+                    phone: adminUser.phone || '',
+                    tenant_id: newTenant.id,
+                    is_super_admin: false,
+                    user_roles: {
+                        create: [{ role_id: adminRole.id }]
+                    },
+                    active: true
+                },
+                include: { user_roles: { include: { role: true } } }
+            });
+        }
+        res.status(201).json({ tenant: newTenant, adminUser: createdAdminUser });
     } catch (error) {
         console.error('Error creating tenant:', error);
         res.status(500).json({ message: 'Failed to create tenant.', error: (error as Error).message });
