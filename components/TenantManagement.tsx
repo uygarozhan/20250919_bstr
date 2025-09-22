@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Tenant, User, Project } from '../types';
 import { RoleName } from '../types';
 import { PencilIcon, PlusCircleIcon, BriefcaseIcon, UsersIcon, ShieldCheckIcon } from './icons/Icons';
+import { useCallback } from 'react';
 import { TenantEditModal } from './modals/TenantEditModal';
 import { TenantAdminManagementModal } from './modals/TenantAdminManagementModal';
 
@@ -49,6 +50,24 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({
     const [managingTenant, setManagingTenant] = useState<Tenant | null>(null);
     const [isAddModalOpen, setAddModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [deletingTenantId, setDeletingTenantId] = useState<number | null>(null);
+    const handleDeleteTenant = useCallback(async (tenantId: number) => {
+        if (!window.confirm('Are you sure you want to delete this tenant? This action cannot be undone.')) return;
+        setDeletingTenantId(tenantId);
+        try {
+            const res = await fetch(`/api/v1/tenant/${tenantId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_super_admin: true }) });
+            if (res.ok) {
+                window.location.reload(); // Or trigger a state update if tenants are managed in state
+            } else {
+                const data = await res.json();
+                alert(data.message || 'Failed to delete tenant.');
+            }
+        } catch (err) {
+            alert('Failed to delete tenant.');
+        } finally {
+            setDeletingTenantId(null);
+        }
+    }, []);
 
     const filteredTenants = tenants.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
@@ -138,6 +157,14 @@ export const TenantManagement: React.FC<TenantManagementProps> = ({
                                     <td className="px-6 py-4 flex items-center space-x-2">
                                         <button onClick={() => setEditingTenant(tenant)} className="text-gray-500 hover:text-blue-600 p-1" title="Edit Tenant Details"><PencilIcon /></button>
                                         <button onClick={() => setManagingTenant(tenant)} className="text-gray-500 hover:text-green-600 p-1" title="Manage Tenant Admin"><ShieldCheckIcon /></button>
+                                        <button
+                                            onClick={() => handleDeleteTenant(tenant.id)}
+                                            className={`text-gray-500 hover:text-red-600 p-1 ${deletingTenantId === tenant.id ? 'opacity-50 pointer-events-none' : ''}`}
+                                            title="Delete Tenant"
+                                            disabled={deletingTenantId === tenant.id}
+                                        >
+                                            {deletingTenantId === tenant.id ? 'Deleting...' : 'Delete'}
+                                        </button>
                                     </td>
                                 </tr>
                             )})}
