@@ -988,7 +988,46 @@ const App: React.FC = () => {
                 setIsLoading(false);
             }
         };
-        const handleUpdateTenant = async () => {};
+        const handleUpdateTenant = async (tenant: any, adminUser: any) => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                // Prepare payload for backend, including adminUser info
+                const payload = {
+                    name: tenant.name,
+                    active: tenant.active,
+                    is_super_admin: currentUser.is_super_admin === true,
+                    adminUser: adminUser
+                };
+                const response = await fetch(`${API_BASE_URL}/tenant/${tenant.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    throw new Error('Failed to update tenant');
+                }
+                // Refresh all data after update
+                const allDataResponse = await fetch(`${API_BASE_URL}/all-data`);
+                if (!allDataResponse.ok) {
+                    throw new Error('Failed to fetch updated data');
+                }
+                const updatedData: AppData = await allDataResponse.json();
+                // Fix user project_ids and discipline_ids for compatibility
+                updatedData.users.forEach(u => {
+                    u.project_ids = u.project_ids || u.projects.map(p => p.id);
+                    u.discipline_ids = u.discipline_ids || u.disciplines.map(d => d.id);
+                    u.projects = u.project_ids.map(id => updatedData.projects.find(p => p.id === id)!).filter(Boolean);
+                    u.disciplines = u.discipline_ids.map(id => updatedData.disciplines.find(d => d.id === id)!).filter(Boolean);
+                });
+                setAppData(updatedData);
+            } catch (error) {
+                setError('Error updating tenant: ' + (error as Error).message);
+                console.error('Error updating tenant:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
         const handleResetPassword = async () => {};
         const handleReassignAdmin = async () => {};
     

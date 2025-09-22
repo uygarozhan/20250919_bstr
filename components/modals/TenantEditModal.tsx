@@ -74,24 +74,29 @@ export const TenantEditModal: React.FC<TenantEditModalProps> = ({ isOpen, onClos
       adminPositionName: adminPositionName,
     });
     } else {
-        if (!adminUserId) {
-            alert('Could not find an administrator for this tenant to update.');
-            return;
-        }
-        if (name.trim() === '' || !adminFirstName.trim() || !adminLastName.trim() || !adminEmail.trim()) {
-            alert('Please fill out all required fields for the tenant and the administrator.');
-            return;
-        }
-        onSave({
-            tenant: { ...tenantToEdit, name },
-            adminUser: {
-                id: adminUserId,
-                firstName: adminFirstName,
-                lastName: adminLastName,
-                email: adminEmail,
-                phone: adminPhone,
-            }
-        });
+    if (!adminUserId) {
+      alert('Could not find an administrator for this tenant to update.');
+      return;
+    }
+    if (name.trim() === '' || !adminFirstName.trim() || !adminLastName.trim() || !adminEmail.trim()) {
+      alert('Please fill out all required fields for the tenant and the administrator.');
+      return;
+    }
+    // Only send password if it is filled (to allow password change)
+    const adminUserPayload: any = {
+      id: adminUserId,
+      firstName: adminFirstName,
+      lastName: adminLastName,
+      email: adminEmail,
+      phone: adminPhone,
+    };
+    if (adminPassword && adminPassword.length > 0) {
+      adminUserPayload.password = adminPassword;
+    }
+    onSave({
+      tenant: { ...tenantToEdit, name },
+      adminUser: adminUserPayload
+    });
     }
   };
 
@@ -158,8 +163,17 @@ export const TenantEditModal: React.FC<TenantEditModalProps> = ({ isOpen, onClos
                             <input type="tel" value={adminPhone} onChange={e => setAdminPhone(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
                         </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Password*</label>
-              <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} className="mt-1 w-full text-sm p-2 border rounded-md"/>
+              <label className="block text-sm font-medium text-gray-700">{isAddMode ? 'Password*' : 'Change Password'}</label>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={e => setAdminPassword(e.target.value)}
+                className="mt-1 w-full text-sm p-2 border rounded-md"
+                placeholder={isAddMode ? '' : 'Leave blank to keep current password'}
+              />
+              {!isAddMode && (
+                <p className="text-xs text-gray-500 mt-1">Leave blank to keep the current password.</p>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700">Position Name</label>

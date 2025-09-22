@@ -13,6 +13,47 @@ app.use(express.json({ limit: '10mb' }));
 
 // --- Create Tenant (Super Admin Only) ---
 app.post('/api/v1/tenant', async (req: express.Request, res: express.Response) => {
+// --- Update Tenant and Admin User (Super Admin Only) ---
+app.put('/api/v1/tenant/:id', async (req: express.Request, res: express.Response) => {
+    try {
+        const tenantId = parseInt(req.params.id, 10);
+        const { name, active, is_super_admin, adminUser } = req.body;
+        if (!is_super_admin) {
+            return res.status(403).json({ message: 'Only super admins can update tenants.' });
+        }
+        if (!name) {
+            return res.status(400).json({ message: 'Tenant name is required.' });
+        }
+        // Update the tenant
+        const updatedTenant = await prisma.tenant.update({
+            where: { id: tenantId },
+            data: { name, active: active !== false }
+        });
+
+        let updatedAdminUser = null;
+        if (adminUser && adminUser.id) {
+            // Update the admin user for the tenant
+            const updateData: any = {
+                firstName: adminUser.firstName,
+                lastName: adminUser.lastName,
+                email: adminUser.email,
+                phone: adminUser.phone || '',
+            };
+            if (adminUser.password && adminUser.password.length > 0) {
+                updateData.password = adminUser.password; // In production, hash this!
+            }
+            updatedAdminUser = await prisma.user.update({
+                where: { id: adminUser.id },
+                data: updateData,
+                include: { user_roles: { include: { role: true } }, position: true }
+            });
+        }
+        res.status(200).json({ tenant: updatedTenant, adminUser: updatedAdminUser });
+    } catch (error) {
+        console.error('Error updating tenant:', error);
+        res.status(500).json({ message: 'Failed to update tenant.', error: (error as Error).message });
+    }
+});
     try {
         // In a real app, you would get the current user from auth middleware/session
         // For now, allow if any user is_super_admin (simulate with a query param or body field)
