@@ -100,9 +100,19 @@ console.log('--- server.ts: PrismaClient initialized ---');
 const PORT = 3001;
 
 app.use(cors({
-    origin: ['https://www.basitor.com'],
-    credentials: true
+    origin: [
+        'https://www.basitor.com',
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173'
+    ],
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: '*'
 }));
+
+// Handle preflight requests for all routes
+app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 console.log('--- server.ts: File execution started ---');
 // If this does not appear in logs, the file is not being executed at all.
